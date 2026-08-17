@@ -156,9 +156,14 @@ void processWiFi() {
         wifiConnectedBefore = true;
         wifiConnectAttempts = 0;
         // Refresh Firebase on first WiFi connection so a deleted database can
-        // be recreated from the device's persisted identity.
-        DEBUG_PRINTLN("[WiFi] Refreshing device registration in Firebase...");
-        registerDeviceInFirebase();
+        // be recreated from the device's persisted identity. Run once per
+        // connect event — registerDeviceInFirebase() is a blocking HTTPS PUT
+        // so we gate it with a flag to avoid freezing the loop on reconnects.
+        static bool registeredThisSession = false;
+        if (!registeredThisSession) {
+          DEBUG_PRINTLN("[WiFi] Registering device in Firebase (once per session)...");
+          registeredThisSession = registerDeviceInFirebase();
+        }
       }
     } else {
       // WiFi disconnected

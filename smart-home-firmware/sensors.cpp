@@ -22,11 +22,13 @@ void initSensors() {
 #endif
 
 #if ENABLE_GAS
-  pinMode(PIN_GAS, INPUT_PULLUP);
+  // MQ-2 module has built-in pull-down; use plain INPUT
+  pinMode(PIN_GAS, INPUT);
 #endif
 
 #if ENABLE_FLAME
-  pinMode(PIN_FLAME, INPUT_PULLUP);
+  // Flame sensor module has built-in pull-down; use plain INPUT
+  pinMode(PIN_FLAME, INPUT);
 #endif
   
   DEBUG_PRINTLN("[Sensors] Initialized.");

@@ -26,10 +26,9 @@
  *   - PubSubClient         by Nick O'Leary
  *   - ArduinoJson          by Benoit Blanchon (v6+)
  *   - LittleFS             (bundled with esp8266 board package)
- *   - Adafruit SH110X      by Adafruit
- *   - Adafruit GFX Library by Adafruit
  *   - NTPClient            by Arduino Libraries / Fabrice Weinberg
  *   - Time                 by PaulStoffregen
+ *   - DHT sensor library   by Adafruit  (only required if ENABLE_DHT11 = true)
  */
 
 #include <Arduino.h>

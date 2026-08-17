@@ -12,6 +12,21 @@ bool registered = false;
 String pairedUid = "";
 int lastRegHttpCode = 0;
 
+static String getDevicePrefix() {
+  String prefix = "SH" + String(NUM_PLUGS);
+#if ENABLE_GAS
+  prefix += "g";
+#endif
+#if ENABLE_FLAME
+  prefix += "f";
+#endif
+#if ENABLE_DHT11
+  prefix += "d";
+#endif
+  prefix += "-";
+  return prefix;
+}
+
 bool loadIdentity() {
   if (!LittleFS.begin()) {
     DEBUG_PRINTLN("[Identity] Failed to mount LittleFS!");
@@ -55,8 +70,8 @@ bool loadIdentity() {
   pairedUid = pUid ? String(pUid) : "";
 
   // Auto-migrate legacy device ID formats (e.g. SP-XXXXXXXX) to new variant
-  // format (e.g. SHX-XXXXXXXX)
-  String expectedPrefix = "SH" + String(NUM_PLUGS) + "-";
+  // format (e.g. SH4gfd-XXXXXXXX)
+  String expectedPrefix = getDevicePrefix();
   if (!deviceId.startsWith(expectedPrefix)) {
     DEBUG_PRINTF("[Identity] Legacy/mismatched device ID '%s' found. "
                  "Regenerating variant prefix '%s'...\n",
@@ -127,7 +142,7 @@ bool registerDeviceInFirebase() {
   if (pairedUid.length() > 0) {
     doc["claimed_by"] = pairedUid;
   } else {
-    doc["claimed_by"] = (char*)NULL;
+    doc["claimed_by"] = (const char*)nullptr; // JSON null — device is unpaired
   }
   doc["plugs"] = NUM_PLUGS;
   
@@ -155,11 +170,11 @@ bool registerDeviceInFirebase() {
 }
 
 void generateFallbackIdentity() {
-  // Fallback: device_id based on ESP chip ID with plug-count prefix
+  // Fallback: device_id based on ESP chip ID with plug-count and sensor prefix
   uint32_t chipId = ESP.getChipId();
-  char idBuf[16];
-  snprintf(idBuf, sizeof(idBuf), "SH%d-%08X", NUM_PLUGS, chipId);
-  deviceId = String(idBuf);
+  char chipIdBuf[16];
+  snprintf(chipIdBuf, sizeof(chipIdBuf), "%08X", chipId);
+  deviceId = getDevicePrefix() + String(chipIdBuf);
 
   // Generate a simple secret based on chip ID and analog read for randomness
   randomSeed(micros() + analogRead(0));

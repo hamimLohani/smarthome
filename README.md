@@ -48,6 +48,7 @@ The **Smart Home** is a WiFi-controlled smart power strip powered by the ESP8266
 | **Offline Operation** | Relays retain state and buttons work even without WiFi |
 | **Relay State Persistence** | Outlet ON/OFF states survive power loss and reboot |
 | **Live Online/Offline Status** | Real-time device connectivity indicator with active sync pings |
+| **Environmental Sensors** | Optional temperature, humidity, gas, and flame monitoring |
 
 ### System Architecture Diagram
 
@@ -101,6 +102,9 @@ The **Smart Home** is a WiFi-controlled smart power strip powered by the ESP8266
 | AC sockets | Standard wall sockets | 2–4 |
 | Logic wire | Jumper/hookup wire 22–24 AWG | — |
 | AC wire | 1.5mm² rated for your load | — |
+| DHT11 Sensor | Temperature & Humidity | 1 (Opt) |
+| MQ-2 Sensor | Gas & Smoke | 1 (Opt) |
+| Flame Sensor | Fire Detection | 1 (Opt) |
 
 ### GPIO Pin Map
 
@@ -110,6 +114,9 @@ The **Smart Home** is a WiFi-controlled smart power strip powered by the ESP8266
 | **D7** | GPIO 13 | Relay 2 IN |
 | **D6** | GPIO 12 | Relay 3 IN |
 | **D0** | GPIO 16 | Relay 4 IN |
+| **D1** | GPIO 5  | DHT11 Sensor (Opt) |
+| **D2** | GPIO 4  | MQ-2 Gas (Opt) |
+| **D4** | GPIO 2  | Flame Sensor (Opt) |
 | **GND** | Ground | All GNDs |
 | **VIN** | 5V in | Relay VCC, Power module |
 
@@ -125,14 +132,21 @@ The firmware supports **6 hardware variants**, selected at compile time via `con
 | 3-Port, No Display | `VARIANT_3_NO_DISPLAY` | 3 |
 | 4-Port, No Display | `VARIANT_4_NO_DISPLAY` | 4 |
 
-### Variant-Aware Device ID
+### Variant & Sensor-Aware Device ID
 
-Device IDs automatically include a plug-count prefix:
-- **2-port:** `SH2-XXXXXXXX`
-- **3-port:** `SH3-XXXXXXXX`
-- **4-port:** `SH4-XXXXXXXX`
+Device IDs automatically include a plug-count prefix and sensor suffixes.
+The plug count is the number right after `SH` (e.g., 2, 3, or 4).
+The sensor suffixes are:
+- `g` for Gas sensor
+- `f` for Flame sensor
+- `d` for DHT11 sensor
 
-The web dashboard auto-detects the number of outlets from this prefix and adjusts the UI accordingly.
+Examples:
+- **4-port with all sensors:** `SH4gfd-XXXXXXXX`
+- **3-port with DHT11 only:** `SH3d-XXXXXXXX`
+- **2-port with no sensors:** `SH2-XXXXXXXX`
+
+The web dashboard auto-detects the number of outlets and enabled sensors directly from this prefix and adjusts the UI accordingly.
 
 ### Headless Operation
 
@@ -181,25 +195,24 @@ Neutral wire → directly to all sockets (bypasses relays)
 Earth wire   → directly to all socket earth terminals
 ```
 
-### Push Button Wiring
+### Sensor Wiring (Optional)
 
 ```
-Button UP    →  TX (GPIO1)  →  GND
-Button DOWN  →  RX (GPIO3)  →  GND
-Button OK    →  D4 (GPIO2)  →  GND
+DHT11 Data   →  D1 (GPIO 5)
+MQ-2 DOUT    →  D2 (GPIO 4)
+Flame DOUT   →  D4 (GPIO 2)
 ```
-
-Internal pull-up resistors are enabled in firmware. No external resistors needed.
+Ensure D4 is not pulled LOW during power-on. Most flame sensors output HIGH natively.
 
 ### Boot Pin Safety Notes
 
 | Pin | Boot Requirement | Status |
 |---|---|---|
 | GPIO0 (D3) | Must be HIGH at power-on | Unused — safe |
-| GPIO2 (D4) | Must be HIGH at power-on | Button is only LOW when pressed — safe |
+| GPIO2 (D4) | Must be HIGH at power-on | Flame sensor outputs HIGH normally — safe |
 | GPIO15 (D8) | Must be LOW at power-on | Intentionally unused |
-| GPIO1 (TX) | Serial transmit | Button UP — serial debug disabled in production |
-| GPIO3 (RX) | Serial receive | Button DOWN — do not hold during firmware upload |
+| GPIO1 (TX) | Serial transmit | Unused |
+| GPIO3 (RX) | Serial receive | Unused |
 
 ### Relay Logic
 
@@ -224,11 +237,10 @@ smart-multiplug-firmware-verient/
 ├── wifi_setup.h/cpp   ← WiFiManager captive portal + recovery
 ├── mqtt_client.h/cpp  ← MQTT connect, subscribe, publish, unpair
 ├── relays.h/cpp       ← setPlug(), state array, flash persistence
-├── buttons.h/cpp      ← Debounce + nested menu navigation
 ├── time_sync.h/cpp    ← NTP sync, timeIsValid tracking
 ├── scheduling.h/cpp   ← Per-port multi-slot recurring schedules
 ├── timers.h/cpp       ← Per-port millis()-based countdown timers
-├── menu_structure.md  ← Human-readable menu map
+├── sensors.h/cpp      ← DHT11, Gas, Flame monitoring and MQTT publishing
 └── wiring_guide.md    ← Hardware wiring reference
 ```
 
@@ -241,7 +253,7 @@ smart-multiplug-firmware-verient/
 | PubSubClient | by Nick O'Leary | MQTT client |
 | ArduinoJson | v6+ | JSON parsing and generation |
 | LittleFS | (bundled) | Persistent config storage |
-| Adafruit GFX | by Adafruit | Graphics primitives |
+| DHT sensor library | by Adafruit | DHT11 temperature/humidity (if ENABLE_DHT11 = true) |
 | NTPClient | by Arduino Libraries | NTP time synchronisation |
 | Time | by PaulStoffregen | Wall-clock time keeping |
 
@@ -740,6 +752,16 @@ The device publishes an `unpair_event` on both `users/{uid}/devices/{deviceId}/u
 }
 ```
 
+### Sensor Technical Notes
+
+| Sensor | Pin | Logic | Condition |
+|---|---|---|---|
+| DHT11 | D1 (GPIO 5) | Data bus | Polled every 2 s; publishes on ≥0.5°C or ≥1% change |
+| MQ-2 Gas | D2 (GPIO 4) | Active HIGH DO | `HIGH` = gas detected — uses plain `INPUT` (module has pull-down) |
+| Flame | D4 (GPIO 2) | Active LOW DO | `LOW` = flame detected — uses plain `INPUT` (module has pull-down) |
+
+> **Important:** Flame sensor modules output **LOW when fire is detected** (active LOW). The firmware correctly maps `LOW → flame: true` in the MQTT payload.
+
 ### Cloud Functions
 
 | Function | Type | Purpose |
@@ -759,14 +781,31 @@ Both functions automatically receive the authenticated user context — UIDs are
 
 ### Device Self-Registration in Firebase
 
-On first WiFi connection, the device automatically registers itself in Firebase Realtime Database via a direct HTTPS PUT:
+On first WiFi connection, the device automatically registers itself in Firebase Realtime Database via a direct HTTPS PUT. It sends its capabilities (plugs and active sensors) directly in the payload:
+
+```json
+{
+  "secret": "sec-123456...",
+  "plugs": 4,
+  "sensors": {
+    "dht11": true,
+    "gas": false,
+    "flame": false
+  },
+  "claimed_by": null
+}
+```
+
+
 
 ```
 PUT https://{db-url}/devices/{deviceId}.json?auth={device_secret}
 { "device_secret": "...", "claimed_by": null }
 ```
 
-This ensures the device exists in the database before any user tries to pair it. If the database is wiped, the device re-creates its entry on the next boot with WiFi (`registerDeviceInFirebase()` is called on every successful WiFi connection).
+This ensures the device exists in the database before any user tries to pair it. If the database is wiped, the device re-creates its entry on the next boot with WiFi.
+
+> **Note:** `registerDeviceInFirebase()` is a blocking HTTPS PUT that runs **once per boot session** (gated by an internal flag). Re-connection events (e.g. WiFi drops) do not retrigger it to prevent loop stalls.
 
 ---
 
@@ -789,35 +828,35 @@ A shell script for compiling and uploading firmware:
 ### Identity Generation
 
 On first boot (no `/identity.json`), the firmware auto-generates:
-- **Device ID**: `SP{N}-{8-hex-chars}` derived from the ESP8266 chip ID and plug count
+- **Device ID**: `SH{N}[gfd]-{8-hex-chars}` derived from plug count + enabled sensors + ESP8266 chip ID
 - **Device Secret**: Random string using `micros()` + `analogRead(A0)` as entropy seed
 
 These are saved to LittleFS and persist across reboots. Only a factory reset (Up + OK 15 seconds) clears them.
 
 ### Variant Selection
 
-Before compiling, set the active variant in `config.h`:
+Before compiling, set the active variant and sensor flags in `config.h`:
 ```cpp
-#define ACTIVE_VARIANT VARIANT_4_WITH_DISPLAY
-```
+// Choose the number of relay ports
+#define ACTIVE_VARIANT VARIANT_4_PORT   // or VARIANT_2_PORT / VARIANT_3_PORT
 
-And the screen driver:
-```cpp
-#define ACTIVE_SCREEN_DRIVER SCREEN_DRIVER_SH1106  // or SCREEN_DRIVER_SSD1306
+// Enable optional sensors (set false to exclude from build entirely)
+#define ENABLE_DHT11 true   // Temperature + Humidity
+#define ENABLE_GAS   true   // MQ-2 Gas / Smoke sensor
+#define ENABLE_FLAME true   // Flame / Fire sensor
 ```
 
 ### Pre-Flight Test Procedure
 
 1. Flash firmware to NodeMCU via `./flash.sh` or Arduino IDE
-2. Power on — verify WiFi config AP appears
-3. Press OK → enters menu
-4. Navigate to each Port → Toggle Power → hear relay click
-5. **Test all relays before connecting any mains voltage**
-6. Navigate to WiFi Connect → Setup WiFi → configure home WiFi
-6. Verify WiFi connects (W indicator on dashboard)
-7. Navigate to App Connect → verify Device ID is displayed
-8. Pair device on web dashboard using the Device ID
-9. Toggle outlets from web dashboard → verify relays respond
+2. Power on — verify WiFi config AP appears (`SmartHome-Setup-{deviceId}`)
+3. Connect to the AP and open `192.168.4.1` in a browser
+4. Select your home WiFi, enter the password, and save
+5. Verify the device connects (AP disappears, device registers in Firebase)
+6. Pair the Device ID in the web dashboard
+7. Toggle outlets from web dashboard → verify relay clicks
+8. **Test all relays before connecting any mains voltage**
+9. If sensors are enabled, verify their readings appear in the dashboard
 
 ---
 
@@ -831,7 +870,7 @@ And the screen driver:
 | Authentication | Username/password per broker credentials |
 | Certificate | `setInsecure()` on ESP8266 to save RAM (known tradeoff) |
 | Topic Scoping | All topics under `users/{uid}/devices/{deviceId}/` |
-| Buffer Limits | TLS buffers limited to prevent ESP8266 OOM |
+| Buffer Limits | TLS buffers set to 2048/2048 bytes; MQTT payload buffer at 768 bytes |
 
 **Current tradeoff (MVP):** Static MQTT credentials in web app environment variables are visible in client-side JS. Acceptable because credentials are scoped to a single read/write user, not broker admin.
 

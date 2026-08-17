@@ -212,10 +212,10 @@ static void connectMqtt() {
 
 void initMqtt() {
   espClient.setInsecure(); // Disable TLS certificate chain validation to save RAM
-  espClient.setBufferSizes(2048, 1024); // Limit TLS buffer sizes to prevent heap OOM crash
+  espClient.setBufferSizes(2048, 2048); // Ensure TX buffer fits TLS handshake from HiveMQ Cloud (~1.5-2KB)
   mqttClient.setServer(MQTT_HOST, MQTT_PORT);
   mqttClient.setCallback(onMqttMessage);
-  mqttClient.setBufferSize(512); // Increase from default 256 for schedule payloads
+  mqttClient.setBufferSize(768); // Schedule payloads can be large; 512 minus topic overhead is too small
   DEBUG_PRINTLN("[MQTT] Initialized.");
 }
 
@@ -250,7 +250,7 @@ void publishTimerState(uint8_t plugIndex, bool active,
   if (plugIndex >= NUM_PLUGS) return;
 
   // Throttle: only publish once per second to avoid flooding the broker
-  static unsigned long lastTimerPublish[4] = { 0, 0, 0, 0 };
+  static unsigned long lastTimerPublish[NUM_PLUGS] = {};
   unsigned long now = millis();
 
   if (!active || now - lastTimerPublish[plugIndex] < 1000UL) {
@@ -318,7 +318,8 @@ void publishSensors(float temperature, float humidity, int gasState, int flameSt
 #endif
 #if ENABLE_FLAME
   if (flameState >= 0) {
-    doc["flame"] = (flameState == HIGH); // Some flame sensors are active LOW, but frontend can handle true/false logic if needed. Or we handle it in sensors.cpp. We'll pass the raw HIGH/LOW here.
+    // Most common flame sensor modules are active LOW: LOW = flame detected, HIGH = clear.
+    doc["flame"] = (flameState == LOW);
   }
 #endif
 
