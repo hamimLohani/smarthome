@@ -102,9 +102,56 @@ void saveIdentity(const String &id, const String &secret, const String &pUid,
 }
 
 bool registerDeviceInFirebase() {
-  DEBUG_PRINTLN("[Identity] Device provisioning is handled by backend. Marking registered.");
-  saveIdentity(deviceId, deviceSecret, pairedUid, true);
-  return true;
+  if (WiFi.status() != WL_CONNECTED) {
+    DEBUG_PRINTLN("[Identity] Cannot register: WiFi not connected.");
+    return false;
+  }
+
+  DEBUG_PRINTLN("[Identity] Registering device in Firebase...");
+
+  WiFiClientSecure client;
+  client.setInsecure();
+
+  HTTPClient http;
+  String url = String(FIREBASE_DB_URL) + "/devices/" + deviceId + ".json";
+  
+  if (!http.begin(client, url)) {
+    DEBUG_PRINTLN("[Identity] Firebase HTTP connect failed.");
+    return false;
+  }
+  
+  http.addHeader("Content-Type", "application/json");
+
+  StaticJsonDocument<256> doc;
+  doc["secret"] = deviceSecret;
+  if (pairedUid.length() > 0) {
+    doc["claimed_by"] = pairedUid;
+  } else {
+    doc["claimed_by"] = (char*)NULL;
+  }
+  doc["plugs"] = NUM_PLUGS;
+  
+  JsonObject sensors = doc.createNestedObject("sensors");
+  sensors["dht11"] = ENABLE_DHT11;
+  sensors["gas"] = ENABLE_GAS;
+  sensors["flame"] = ENABLE_FLAME;
+
+  String payload;
+  serializeJson(doc, payload);
+
+  int httpCode = http.PUT(payload);
+  lastRegHttpCode = httpCode;
+
+  if (httpCode == HTTP_CODE_OK || httpCode == 200) {
+    DEBUG_PRINTLN("[Identity] Successfully registered in Firebase.");
+    saveIdentity(deviceId, deviceSecret, pairedUid, true);
+    http.end();
+    return true;
+  } else {
+    DEBUG_PRINTF("[Identity] Firebase registration failed, code: %d\n", httpCode);
+    http.end();
+    return false;
+  }
 }
 
 void generateFallbackIdentity() {

@@ -1,4 +1,4 @@
-# Smart Multi-Plug — Complete System Manual
+# Smart Home — Complete System Manual
 
 **Firmware Version:** v1.6.0  
 **Last Updated:** August 2026
@@ -12,26 +12,24 @@
 3. [Hardware Variants](#3-hardware-variants)
 4. [Wiring & Assembly](#4-wiring--assembly)
 5. [Firmware Architecture](#5-firmware-architecture)
-6. [Physical Menu System (OLED)](#6-physical-menu-system-oled)
-7. [WiFi Setup & Recovery](#7-wifi-setup--recovery)
-8. [MQTT Communication Protocol](#8-mqtt-communication-protocol)
-9. [Timer System](#9-timer-system)
-10. [Schedule System](#10-schedule-system)
-11. [Web Dashboard (React App)](#11-web-dashboard-react-app)
-12. [Device Pairing & Family Sharing](#12-device-pairing--family-sharing)
-13. [Firebase Backend](#13-firebase-backend)
-14. [Factory Provisioning & Flashing](#14-factory-provisioning--flashing)
-15. [Security Architecture](#15-security-architecture)
-16. [Troubleshooting Guide](#16-troubleshooting-guide)
-17. [Known Limitations](#17-known-limitations)
+6. [WiFi Setup & Recovery](#7-wifi-setup--recovery)
+7. [MQTT Communication Protocol](#8-mqtt-communication-protocol)
+8. [Timer System](#9-timer-system)
+9. [Schedule System](#10-schedule-system)
+10. [Web Dashboard (React App)](#11-web-dashboard-react-app)
+11. [Device Pairing & Family Sharing](#12-device-pairing--family-sharing)
+12. [Firebase Backend](#13-firebase-backend)
+13. [Factory Provisioning & Flashing](#14-factory-provisioning--flashing)
+14. [Security Architecture](#15-security-architecture)
+15. [Troubleshooting Guide](#16-troubleshooting-guide)
+15. [Known Limitations](#17-known-limitations)
 
 ---
 
 ## 1. System Overview
 
-The **Smart Multi-Plug** is a WiFi-controlled smart power strip powered by the ESP8266 (NodeMCU) microcontroller. It allows users to independently control 2, 3, or 4 AC outlets via:
+The **Smart Home** is a WiFi-controlled smart power strip powered by the ESP8266 (NodeMCU) microcontroller. It allows users to independently control 2, 3, or 4 AC outlets via:
 
-- **Physical buttons + OLED display** on the device itself
 - **Web dashboard** (React PWA) accessible from any browser or installed as a mobile app
 - **MQTT protocol** for real-time bidirectional communication between device and web app
 
@@ -43,8 +41,7 @@ The **Smart Multi-Plug** is a WiFi-controlled smart power strip powered by the E
 | **Delay Timers** | One-off countdown timers (1 min – 999 min) that work offline (no WiFi needed) |
 | **Scheduled Timers** | Clock-based recurring ON/OFF schedules (requires WiFi for NTP time sync) |
 | **Multi-Slot Scheduling** | Up to 4 independent schedule slots per outlet |
-| **Dashboard Quick-Control** | Toggle outlets directly from the OLED main screen using Up/Down/OK buttons |
-| **Multi-Device Support** | One account can control multiple Smart Multi-Plugs |
+| **Multi-Device Support** | One account can control multiple Smart Homes |
 | **Family Sharing** | Invite family members to control shared plugs with owner approval |
 | **Bilingual UI** | Web dashboard supports English and Bangla (বাংলা) |
 | **PWA Support** | Install as a native-like app on mobile devices |
@@ -78,10 +75,10 @@ The **Smart Multi-Plug** is a WiFi-controlled smart power strip powered by the E
 │                              │                                   │
 │                    ┌─────────▼─────────┐                        │
 │                    │   ESP8266 Firmware │                        │
-│                    │  (Smart Multi-Plug)│                        │
-│                    │  ┌─────┐ ┌──────┐ │                        │
-│                    │  │OLED │ │Relays│ │                        │
-│                    │  └─────┘ └──────┘ │                        │
+│                    │  (Smart Home)│                        │
+│                    │        ┌──────┐  │                        │
+│                    │        │Relays│  │                        │
+│                    │        └──────┘  │                        │
 │                    │  ┌────────────┐   │                        │
 │                    │  │ 3 Buttons  │   │                        │
 │                    │  └────────────┘   │                        │
@@ -97,10 +94,8 @@ The **Smart Multi-Plug** is a WiFi-controlled smart power strip powered by the E
 
 | Component | Specification | Qty |
 |---|---|---|
-| NodeMCU ESP8266 | v3 (30-pin), ESP-12E/F | 1 |
+| NodeMCU ESP8266 | v3 (30-pin), ESH-12E/F | 1 |
 | Relay Module | 5V, Active LOW, opto-isolated | 2–4 |
-| OLED Display | SH1106 or SSD1306, 128×64, I2C | 0–1 |
-| Tactile Push Button | Momentary, normally open | 3 (display models) |
 | Power Supply | Hi-Link HLK-PM01 AC-to-5V, or 5V USB adapter | 1 |
 | Mains cable | 3-core (Live, Neutral, Earth) | as needed |
 | AC sockets | Standard wall sockets | 2–4 |
@@ -115,24 +110,8 @@ The **Smart Multi-Plug** is a WiFi-controlled smart power strip powered by the E
 | **D7** | GPIO 13 | Relay 2 IN |
 | **D6** | GPIO 12 | Relay 3 IN |
 | **D0** | GPIO 16 | Relay 4 IN |
-| **D2** | GPIO 4 | OLED SDA (I2C) |
-| **D1** | GPIO 5 | OLED SCL (I2C) |
-| **D4** | GPIO 2 | Button OK ⚠️ Boot pin |
-| **TX** | GPIO 1 | Button UP ⚠️ Serial TX |
-| **RX** | GPIO 3 | Button DOWN ⚠️ Serial RX |
-| **3V3** | 3.3V out | OLED VCC |
 | **GND** | Ground | All GNDs |
 | **VIN** | 5V in | Relay VCC, Power module |
-
-### Display Configuration
-
-| Parameter | Value |
-|---|---|
-| I2C Address | `0x3C` (try `0x3D` if not working) |
-| Screen Resolution | 128 × 64 pixels |
-| Supported Drivers | SH1106 (1.3" OLED), SSD1306 (0.96" OLED) |
-| Text Size | 1 (6px/char, max 21 chars per line) |
-| Refresh Rate | ~10 Hz (100ms interval) |
 
 ---
 
@@ -140,31 +119,24 @@ The **Smart Multi-Plug** is a WiFi-controlled smart power strip powered by the E
 
 The firmware supports **6 hardware variants**, selected at compile time via `config.h`:
 
-| Variant | `#define` | Plugs | Display |
-|---|---|---|---|
-| 2-Port, No Display | `VARIANT_2_NO_DISPLAY` | 2 | ✗ |
-| 2-Port, With Display | `VARIANT_2_WITH_DISPLAY` | 2 | ✓ |
-| 3-Port, No Display | `VARIANT_3_NO_DISPLAY` | 3 | ✗ |
-| 3-Port, With Display | `VARIANT_3_WITH_DISPLAY` | 3 | ✓ |
-| 4-Port, No Display | `VARIANT_4_NO_DISPLAY` | 4 | ✗ |
-| 4-Port, With Display | `VARIANT_4_WITH_DISPLAY` | 4 | ✓ |
+| Variant | `#define` | Plugs |
+|---|---|---|
+| 2-Port, No Display | `VARIANT_2_NO_DISPLAY` | 2 |
+| 3-Port, No Display | `VARIANT_3_NO_DISPLAY` | 3 |
+| 4-Port, No Display | `VARIANT_4_NO_DISPLAY` | 4 |
 
 ### Variant-Aware Device ID
 
 Device IDs automatically include a plug-count prefix:
-- **2-port:** `SP2-XXXXXXXX`
-- **3-port:** `SP3-XXXXXXXX`
-- **4-port:** `SP4-XXXXXXXX`
+- **2-port:** `SH2-XXXXXXXX`
+- **3-port:** `SH3-XXXXXXXX`
+- **4-port:** `SH4-XXXXXXXX`
 
 The web dashboard auto-detects the number of outlets from this prefix and adjusts the UI accordingly.
 
-### No-Display Variants
+### Headless Operation
 
-When `HAS_DISPLAY` is `false`:
-- All display rendering functions become no-ops
-- All button/menu functions become no-ops
-- WiFi config portal starts automatically on first boot
-- Device operates purely via web dashboard control
+The device operates purely via web dashboard control. The WiFi config portal starts automatically on first boot.
 
 ---
 
@@ -185,16 +157,7 @@ Option B — Inside the plug strip (AC powered):
                           └─► GND   → NodeMCU GND + Relay GND × 4
 ```
 
-> **Note:** The NodeMCU 3.3V pin powers the OLED only. Do NOT power relays from 3.3V.
-
-### OLED Display Wiring
-
-```
-OLED VCC  →  3V3
-OLED GND  →  GND
-OLED SDA  →  D2 (GPIO4)
-OLED SCL  →  D1 (GPIO5)
-```
+> **Note:** Do NOT power relays from 3.3V.
 
 ### Relay Module Wiring (Logic Side)
 
@@ -261,7 +224,6 @@ smart-multiplug-firmware-verient/
 ├── wifi_setup.h/cpp   ← WiFiManager captive portal + recovery
 ├── mqtt_client.h/cpp  ← MQTT connect, subscribe, publish, unpair
 ├── relays.h/cpp       ← setPlug(), state array, flash persistence
-├── display.h/cpp      ← OLED screen state machine
 ├── buttons.h/cpp      ← Debounce + nested menu navigation
 ├── time_sync.h/cpp    ← NTP sync, timeIsValid tracking
 ├── scheduling.h/cpp   ← Per-port multi-slot recurring schedules
@@ -279,8 +241,6 @@ smart-multiplug-firmware-verient/
 | PubSubClient | by Nick O'Leary | MQTT client |
 | ArduinoJson | v6+ | JSON parsing and generation |
 | LittleFS | (bundled) | Persistent config storage |
-| Adafruit SH110X | by Adafruit | SH1106 OLED driver |
-| Adafruit SSD1306 | by Adafruit | SSD1306 OLED driver |
 | Adafruit GFX | by Adafruit | Graphics primitives |
 | NTPClient | by Arduino Libraries | NTP time synchronisation |
 | Time | by PaulStoffregen | Wall-clock time keeping |
@@ -289,7 +249,7 @@ smart-multiplug-firmware-verient/
 
 | Setting | Value |
 |---|---|
-| Board | NodeMCU 1.0 (ESP-12E) |
+| Board | NodeMCU 1.0 (ESH-12E) |
 | Flash Size | 4MB (FS:2MB, OTA:~1MB) |
 | CPU Frequency | 80 MHz |
 | Upload Speed | 115200 baud |
@@ -298,17 +258,16 @@ smart-multiplug-firmware-verient/
 ### Boot Sequence
 
 ```
-1. initDisplay()           → OLED shows boot screen immediately
 2. loadIdentity()          → Load device ID/secret from LittleFS
                              (self-generates if missing, halts if fatal)
 3. initRelays()            → Set GPIO outputs, restore last-known relay states
 4. initButtons()           → Configure button pins as INPUT_PULLUP
 5. initWiFi()              → Attempt connection or show menu/portal
 6. initTimeSync()          → Initialize NTP client (sync on WiFi connect)
-7. initScheduling()        → Load persisted schedules from LittleFS
-8. initTimers()            → Clear all delay timer slots
-9. initMqtt()              → Configure MQTT client (connects in processMqtt)
-10. → Transition to SCREEN_STATE_MAIN
+6. initScheduling()        → Load persisted schedules from LittleFS
+7. initTimers()            → Clear all delay timer slots
+8. initMqtt()              → Configure MQTT client (connects in processMqtt)
+9. → Transition to SCREEN_STATE_MAIN
 ```
 
 ### Main Loop Processing Order
@@ -320,7 +279,6 @@ processTimeSync()   → NTP re-sync (hourly when connected)
 processSchedules()  → Evaluate daily ON/OFF against wall-clock
 processTimers()     → Check countdown expiry, fire setPlug()
 processButtons()    → Debounce, long-press, menu navigation
-updateDisplay()     → OLED redraw at ~10 Hz
 checkForOTAUpdate() → Placeholder for future OTA
 yield()             → ESP8266 background tasks (watchdog-safe)
 ```
@@ -336,124 +294,7 @@ yield()             → ESP8266 background tasks (watchdog-safe)
 
 ---
 
-## 6. Physical Menu System (OLED)
-
-### Button Controls
-
-| Action | Behaviour |
-|---|---|
-| **OK Click** (from dashboard) | If cursor active: toggle selected plug. If idle: enter main menu |
-| **OK Click** (in menu) | Select option / confirm value / advance |
-| **OK Hold (1 sec)** | Go back one menu level |
-| **Up / Down** (from dashboard) | Activate quick-control cursor, navigate between plugs |
-| **Up / Down** (in menu) | Scroll menu items or adjust numeric values |
-| **Up + OK Hold (15 sec)** | Hidden factory reset (wipes WiFi + identity, restarts) |
-
-### Dashboard Quick-Control
-
-From the main dashboard screen, press Up or Down to activate a cursor that highlights one plug at a time. Press OK to toggle that plug ON/OFF instantly. The cursor auto-dismisses after 3 seconds of inactivity.
-
-### Dashboard Display Layout
-
-```
-┌────────────────────────┐
-│ DASHBOARD 10:30am  W.M │  ← Header with 12h time, WiFi (W), MQTT (M)
-├──────────┬─────────────┤
-│ P1: OFF  │ P2: ON    T │  ← T = active timer indicator
-├──────────┼─────────────┤
-│ P3: OFF  │ P4: OFF     │
-└──────────┴─────────────┘
-[^v]sel  [OK]toggle         ← Hint bar (shown when cursor active)
-```
-
-### Screen States
-
-| State | Description |
-|---|---|
-| `SCREEN_STATE_BOOT` | Shows "Initializing..." with device ID |
-| `SCREEN_STATE_MAIN` | Dashboard with 2×2 plug grid |
-| `SCREEN_STATE_PORTAL` | WiFi setup instructions |
-| `SCREEN_STATE_PAIRING_CODE` | Device ID for web pairing |
-| `SCREEN_STATE_MENU` | Nested menu system |
-
-### Complete Menu Navigation Tree
-
-```
-Main Dashboard
-  └─ [OK click] → MAIN MENU
-       ├── Port 1  → PORT CONFIG
-       │     ├── Toggle: OFF→ON / ON→OFF
-       │     ├── Timer Setup → SELECT TIMER
-       │     │     ├── Delay Mode → DELAY TIMER
-       │     │     │     ├── Action: ON / OFF
-       │     │     │     ├── 1 Min / 5 Min / 1 Hour
-       │     │     │     ├── Custom: X min → CUSTOM ADJUSTER
-       │     │     │     ├── Start Timer → fires & returns to dashboard
-       │     │     │     └── < Back
-       │     │     ├── Schedule Mode → SCHEDULE TIMER (requires WiFi+NTP)
-       │     │     │     ├── WiFi: Connected / OFFLINE! (info banner)
-       │     │     │     ├── Slot: Slot 1..4 (Up/Down cycles)
-       │     │     │     ├── Action: ON / OFF
-       │     │     │     ├── Hour: 00–23 (Up/Down adjusts)
-       │     │     │     ├── Min: 00–59 (Up/Down adjusts)
-       │     │     │     ├── Repeat: Daily / Once
-       │     │     │     ├── Save Slot N → persists & returns
-       │     │     │     └── < Back
-       │     │     ├── Schedule Actions → SCHEDULE ACTIONS
-       │     │     │     ├── Active: X/4 slots (info)
-       │     │     │     ├── Start All Slots
-       │     │     │     ├── Stop All Slots
-       │     │     │     ├── S1: 08:00 ON D (toggle enable/disable)
-       │     │     │     ├── S2: [Disabled] (toggle)
-       │     │     │     ├── S3: [Disabled]
-       │     │     │     ├── S4: [Disabled]
-       │     │     │     └── < Back
-       │     │     └── < Back
-       │     └── < Back
-       ├── Port 2  → (same structure)
-       ├── Port 3  → (same structure)
-       ├── Port 4  → (same structure)
-       ├── WiFi Connect
-       │     ├── Status → WIFI STATUS
-       │     │     ├── State: Connected / Offline
-       │     │     ├── SSID: HomeWiFi / None
-       │     │     ├── IP: 192.168.1.15 / 0.0.0.0
-       │     │     └── < Back
-       │     ├── Setup WiFi → WIFI SETUP GUIDE (step-by-step)
-       │     │     ├── 1. On your phone, open WiFi settings
-       │     │     ├── 2. Connect to AP: SmartPlug-Setup-...
-       │     │     ├── 3. Open browser: 192.168.4.1
-       │     │     ├── 4. Select your WiFi
-       │     │     ├── [OK] LAUNCH PORTAL → starts hotspot
-       │     │     └── < Back
-       │     ├── Forget WiFi → wipes credentials, enters offline mode
-       │     └── < Back
-       ├── App Connect (requires WiFi)
-       │     ├── ID: SP4-XXXXXXXX
-       │     ├── WiFi:OK MQTT:OK
-       │     ├── App: linked / not linked / preparing...
-       │     ├── Instructions (3 lines)
-       │     ├── [ Unpair Device ] / [ Reset App Link ]
-       │     └── < Back
-       ├── About
-       │     ├── Smart Multi-Plug
-       │     ├── FW: v1.6.0
-       │     ├── ID: SP4-XXXXXXXX
-       │     ├── WiFi: Connected / Offline
-       │     ├── IP: 192.168.1.15
-       │     ├── MQTT: Connected / Offline
-       │     ├── Heap: XX KB
-       │     └── < Back
-       └── < Back → returns to dashboard
-```
-
-### Inactivity Timeout
-
-The menu returns to the main dashboard after **10 seconds** of no button activity (`SCREEN_INACTIVITY_TIMEOUT_MS`).
-
----
-
-## 7. WiFi Setup & Recovery
+## 6. WiFi Setup & Recovery
 
 ### First Boot (No Saved Credentials)
 
@@ -462,7 +303,7 @@ The menu returns to the main dashboard after **10 seconds** of no button activit
 
 ### WiFi Configuration Portal
 
-1. Device creates AP named `SmartPlug-Setup-<DeviceID>` (e.g., `SmartPlug-Setup-SP4-A1B2C3D4`)
+1. Device creates AP named `SmartHome-Setup-<DeviceID>` (e.g., `SmartHome-Setup-SH4-A1B2C3D4`)
 2. User connects phone/laptop to this AP (no password)
 3. A captive portal page opens automatically (or navigate to `192.168.4.1`)
 4. Portal shows device ID, setup instructions, and available WiFi networks
@@ -473,7 +314,7 @@ The menu returns to the main dashboard after **10 seconds** of no button activit
 
 - If WiFi connection fails after **3 consecutive attempts** (spaced 10 seconds apart), the device automatically falls back into the WiFi configuration portal AP
 - No button press is required for this recovery — it's fully automatic
-- OLED displays a clear message explaining the situation
+- Device handles the situation gracefully
 
 ### Offline Mode
 
@@ -491,7 +332,7 @@ The menu returns to the main dashboard after **10 seconds** of no button activit
 
 ---
 
-## 8. MQTT Communication Protocol
+## 6. MQTT Communication Protocol
 
 ### Broker Configuration
 
@@ -580,7 +421,7 @@ When the device first receives a message on the wildcard subscription `users/+/d
 
 ---
 
-## 9. Timer System (Delay Mode)
+## 7. Timer System (Delay Mode)
 
 ### How It Works
 
@@ -595,7 +436,7 @@ When the device first receives a message on the wildcard subscription `users/+/d
 ```
 User sets timer → startDelayTimer() → millis countdown begins
                                      → MQTT publishes timer/state (retained)
-                                     → "T" indicator shown on OLED dashboard
+                                     
 
 Timer running   → processTimers()    → publishes remaining time every loop
                                      → web UI shows live countdown
@@ -616,7 +457,7 @@ Timer fires     → setPlug()          → relay toggled
 
 ---
 
-## 10. Schedule System
+## 8. Schedule System
 
 ### How It Works
 
@@ -669,7 +510,7 @@ From the physical menu, users can:
 
 ---
 
-## 11. Web Dashboard (React App)
+## 9. Web Dashboard (React App)
 
 ### Technology Stack
 
@@ -725,7 +566,7 @@ From the physical menu, users can:
 ### Settings Page Features
 
 - **Device Info**: Device ID, online/offline status indicator
-- **Device Name**: Rename the Smart Multi-Plug (e.g., "Living Room Plug")
+- **Device Name**: Rename the Smart Home (e.g., "Living Room Plug")
 - **Rename Outlets**: Individual inline rename for each socket (e.g., "Desk Lamp", "Fan")
 - **Change Password**: With real-time password strength indicators (8+ chars, uppercase, number, symbol)
 - **Theme Toggle**: Light / Dark / System mode
@@ -770,23 +611,23 @@ Provides fullscreen experience, faster load times, and home screen icon.
 
 ---
 
-## 12. Device Pairing & Family Sharing
+## 10. Device Pairing & Family Sharing
 
 ### Initial Pairing Flow
 
 ```
 1. User creates account or signs in on web dashboard
 2. User navigates to Pair Device page
-3. User enters Device ID (shown on OLED or device sticker)
-   - Accepts formats: SPX-XXXXXXXX, SP2-..., SP3-..., SP4-...
-   - Auto-resolves variant prefix if user enters old SP- format
-   - Also accepts raw 8-char hex (auto-prepends "SP-")
+3. User enters Device ID (shown on device sticker or AP name)
+   - Accepts formats: SHX-XXXXXXXX, SH2-..., SH3-..., SH4-...
+   - Auto-resolves variant prefix if user enters old SH- format
+   - Also accepts raw 8-char hex (auto-prepends "SH-")
 4. System checks if device exists in Firebase /devices table
 5. If unclaimed → claims device immediately (atomically via Cloud Function)
 6. If already claimed → creates pairing request for owner approval
-7. On success → web app sends MQTT sync message to device
-8. Device extracts owner UID from sync topic and saves it
-9. Both sides are now linked and can communicate
+6. On success → web app sends MQTT sync message to device
+7. Device extracts owner UID from sync topic and saves it
+8. Both sides are now linked and can communicate
 ```
 
 ### Family Sharing Architecture
@@ -839,14 +680,14 @@ The device publishes an `unpair_event` on both `users/{uid}/devices/{deviceId}/u
 
 ---
 
-## 13. Firebase Backend
+## 11. Firebase Backend
 
 ### Realtime Database Structure
 
 ```json
 {
   "devices": {
-    "SP4-A1B2C3D4": {
+    "SH4-A1B2C3D4": {
       "device_secret": "sec-123456789012",
       "claimed_by": "uid_of_owner",
       "claimed_at": 1700000000000,
@@ -870,7 +711,7 @@ The device publishes an `unpair_event` on both `users/{uid}/devices/{deviceId}/u
   "users": {
     "uid_of_owner": {
       "devices": {
-        "SP4-A1B2C3D4": {
+        "SH4-A1B2C3D4": {
           "name": "Living Room Plug",
           "paired_at": 1700000000000,
           "plugs": {
@@ -929,7 +770,7 @@ This ensures the device exists in the database before any user tries to pair it.
 
 ---
 
-## 14. Factory Provisioning & Flashing
+## 12. Factory Provisioning & Flashing
 
 ### Flash Tool (`flash.sh`)
 
@@ -968,19 +809,19 @@ And the screen driver:
 ### Pre-Flight Test Procedure
 
 1. Flash firmware to NodeMCU via `./flash.sh` or Arduino IDE
-2. Power on — verify OLED shows boot screen with device ID
+2. Power on — verify WiFi config AP appears
 3. Press OK → enters menu
 4. Navigate to each Port → Toggle Power → hear relay click
 5. **Test all relays before connecting any mains voltage**
 6. Navigate to WiFi Connect → Setup WiFi → configure home WiFi
-7. Verify WiFi connects (W indicator on dashboard)
-8. Navigate to App Connect → verify Device ID is displayed
-9. Pair device on web dashboard using the Device ID
-10. Toggle outlets from web dashboard → verify relays respond
+6. Verify WiFi connects (W indicator on dashboard)
+7. Navigate to App Connect → verify Device ID is displayed
+8. Pair device on web dashboard using the Device ID
+9. Toggle outlets from web dashboard → verify relays respond
 
 ---
 
-## 15. Security Architecture
+## 13. Security Architecture
 
 ### MQTT Security
 
@@ -1012,37 +853,21 @@ And the screen driver:
 
 ---
 
-## 16. Troubleshooting Guide
+## 14. Troubleshooting Guide
 
 ### Device Won't Connect to WiFi
 
 1. Check that the WiFi password is correct
 2. Ensure the router supports **2.4 GHz** (ESP8266 does not support 5 GHz)
-3. Use the OLED menu: WiFi Connect → Forget WiFi → Setup WiFi (re-enter credentials)
+3. Reset WiFi preferences and setup WiFi again
 4. After 3 failed attempts, the device automatically opens the setup portal
 5. Check that router MAC filtering is not blocking the ESP8266
-
-### OLED Display Not Working
-
-1. Verify wiring: SDA → D2 (GPIO4), SCL → D1 (GPIO5), VCC → 3V3, GND → GND
-2. Check I2C address: default is `0x3C`, try `0x3D`
-3. Verify the correct screen driver is selected in `config.h` (SH1106 vs SSD1306)
-4. Try the hidden factory reset: hold Up + OK for 15 seconds
-
-### Web Dashboard Shows "Device Offline"
-
-1. Check that the Smart Multi-Plug is powered on and the OLED shows "W" (WiFi connected)
-2. Verify the OLED also shows "M" (MQTT connected)
-3. Check your internet connection on the phone/computer
-4. Try refreshing the web page — the dashboard sends a sync ping on load
-5. If the device was recently unpaired and re-paired, it may need a power cycle
-6. Wait for the periodic heartbeat check (every 15 seconds)
 
 ### Relays Not Clicking
 
 1. Verify relay module is powered with **5V** (VIN pin), not 3.3V
 2. Check wiring between NodeMCU GPIO pins and relay IN pins
-3. Test from the OLED menu: Port X → Toggle Power
+3. Test from the Web Dashboard: Port X → Toggle Power
 4. If relay clicks but socket doesn't work, check AC wiring (COM → Live, NO → Socket)
 
 ### Schedule Not Firing
@@ -1062,7 +887,7 @@ And the screen driver:
 
 ### Pairing Issues
 
-1. Ensure the Device ID format is correct: `SPX-XXXXXXXX` (X = number of plugs, 2/3/4)
+1. Ensure the Device ID format is correct: `SHX-XXXXXXXX` (X = number of plugs, 2/3/4)
 2. The device must be registered in Firebase (happens automatically on first WiFi connection)
 3. If the device was previously paired to another account, the new user will see "Awaiting Approval"
 4. The owner must approve the pairing request from their Settings page
@@ -1076,7 +901,7 @@ And the screen driver:
 
 ---
 
-## 17. Known Limitations
+## 14. Known Limitations
 
 | Limitation | Impact | Workaround |
 |---|---|---|
@@ -1099,7 +924,6 @@ And the screen driver:
 |---|---|---|
 | `FIRMWARE_VERSION` | `"v1.6.0"` | Displayed on About screen |
 | `RELAY_ACTIVE_LOW` | `true` | Relay trigger polarity |
-| `SCREEN_I2C_ADDR` | `0x3C` | OLED I2C address |
 | `SCREEN_INACTIVITY_TIMEOUT_MS` | `10000` | Menu auto-dismiss (10s) |
 | `DEBOUNCE_TIME_MS` | `40` | Button debounce (40ms) |
 | `LONG_PRESS_BACK_MS` | `1000` | OK long-press for back (1s) |

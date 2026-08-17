@@ -60,7 +60,7 @@ void configModeCallback(WiFiManager *myWiFiManager) {
   inWiFiPortal = true;
   portalStartTime = millis();
   
-  // Update display to portal/setup instructions
+  // Entering portal
 
 }
 
@@ -121,8 +121,8 @@ void initWiFi() {
     wifiConnectedBefore = false;
   } else {
     DEBUG_PRINTLN("[WiFi] No saved credentials found.");
-    // Screenless variant: Automatically start configuration portal AP immediately
-    DEBUG_PRINTLN("[WiFi] No display: starting config portal immediately.");
+    // Automatically start configuration portal AP immediately
+    DEBUG_PRINTLN("[WiFi] Starting config portal immediately.");
     startWiFiPortal();
   }
 }

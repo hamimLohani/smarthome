@@ -43,6 +43,7 @@
 #include "time_sync.h"
 #include "timers.h"
 #include "scheduling.h"
+#include "sensors.h"
 
 // ── OTA placeholder ──────────────────────────────────────────────────────────
 /**
@@ -65,7 +66,7 @@ void setup() {
 
 
   // 2. Load device identity from LittleFS
-  //    Halts with a display error if identity is missing and not in dev mode
+  //    Halts with an error if identity is missing and not in dev mode
   if (!loadIdentity()) {
     // Show error on screen and halt (watchdog will eventually reset the device)
     DEBUG_PRINTLN("[Boot] FATAL: Could not load device identity!");
@@ -89,7 +90,10 @@ void setup() {
   // 7. Delay timers — clear all slots (timers do not survive a reboot)
   initTimers();
 
-  // 8. MQTT — connects once WiFi is available (handled in processMqtt)
+  // 8. Sensors — initialize the optional DHT11, Gas, and Flame sensors
+  initSensors();
+
+  // 9. MQTT — connects once WiFi is available (handled in processMqtt)
   initMqtt();
 
   DEBUG_PRINTLN("[Boot] Setup complete.");
@@ -113,6 +117,9 @@ void loop() {
 
   // ── Delay timers: check countdown expiry and fire setPlug() when done ─────
   processTimers();
+
+  // ── Sensors: read sensors periodically and publish if values change ───────
+  processSensors();
 
 
   // ── OTA update check (placeholder — does nothing in this version) ─────────

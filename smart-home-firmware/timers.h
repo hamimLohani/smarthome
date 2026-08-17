@@ -18,8 +18,8 @@
  *     for a bug:  millis() resets on boot, so any in-progress countdown
  *     cannot be reliably reconstructed.
  *   - On completion, the timer fires through setPlug() — exactly the same
- *     code path as a manual button press or MQTT command — keeping state,
- *     MQTT publication, and display always in sync.
+ *     code path as an MQTT command — keeping state,
+ *     and MQTT publication always in sync.
  */
 
 /**

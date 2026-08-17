@@ -301,6 +301,38 @@ void publishScheduleState(uint8_t plugIndex) {
   DEBUG_PRINTF("[MQTT] Published plug %u schedule array = %s\n", plugIndex + 1, buf);
 }
 
+void publishSensors(float temperature, float humidity, int gasState, int flameState) {
+  if (!mqttClient.connected()) return;
+
+  StaticJsonDocument<256> doc;
+#if ENABLE_DHT11
+  if (!isnan(temperature)) {
+    doc["temperature"] = temperature;
+    doc["humidity"] = humidity;
+  }
+#endif
+#if ENABLE_GAS
+  if (gasState >= 0) {
+    doc["gas"] = (gasState == HIGH);
+  }
+#endif
+#if ENABLE_FLAME
+  if (flameState >= 0) {
+    doc["flame"] = (flameState == HIGH); // Some flame sensors are active LOW, but frontend can handle true/false logic if needed. Or we handle it in sensors.cpp. We'll pass the raw HIGH/LOW here.
+  }
+#endif
+
+  if (doc.size() > 0) {
+    String topic = baseTopic() + "/sensors";
+    char payload[256];
+    serializeJson(doc, payload, sizeof(payload));
+    mqttClient.publish(topic.c_str(), payload, true);
+    DEBUG_PRINTLN("[MQTT] Published sensor data");
+  }
+}
+
+// ── Private device pairing logic ──────────────────────────────────────────────
+
 bool isMqttConnected() {
   return mqttClient.connected();
 }

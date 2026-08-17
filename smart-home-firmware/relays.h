@@ -8,7 +8,7 @@
  * Responsibility: Manages all relay GPIO writes and the in-memory plug state array.
  *
  * IMPORTANT: All relay state changes MUST go through setPlug() — never call
- * digitalWrite() on a relay pin directly. This keeps state, MQTT, and display
+ * digitalWrite() on a relay pin directly. This keeps state and MQTT
  * always in sync.
  */
 
@@ -23,7 +23,6 @@ void initRelays();
  * - Drives the GPIO respecting RELAY_ACTIVE_LOW
  * - Updates the in-memory state array
  * - Publishes the new state to MQTT (if connected)
- * - Refreshes the OLED display
  *
  * @param plugIndex  0-based plug index (0..NUM_PLUGS-1)
  * @param on         true = ON, false = OFF

@@ -45,7 +45,7 @@ void processTimers() {
 
       timers[i].active = false;  // Clear before setPlug to avoid re-entry
 
-      // Fire through the single control function, keeping state/MQTT/display in sync
+      // Fire through the single control function, keeping state/MQTT in sync
       setPlug(i, timers[i].turnOn);
 
       // Notify MQTT that the timer is no longer active

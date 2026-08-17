@@ -7,7 +7,7 @@
  *   2. Updates the in-memory plugStates[] array
  *   3. Publishes the new retained MQTT state message
  *   4. Persists state to LittleFS (survives power-loss / WiFi reboot)
- *   5. Requests a display redraw
+ *   5. Syncs state
  */
 
 #include "relays.h"
@@ -61,7 +61,7 @@ void setPlug(uint8_t plugIndex, bool on) {
   // Persist to flash so state survives a reboot
   savePlugStates();
 
-  // Redraw display to reflect new state
+  // State reflected
 
 }
 

@@ -21,43 +21,25 @@
 
 
 // ── Hardware Variant Definitions ─────────────────────────────────────────────
-#define VARIANT_2_NO_DISPLAY   1
-#define VARIANT_2_WITH_DISPLAY  2
-#define VARIANT_3_NO_DISPLAY   3
-#define VARIANT_3_WITH_DISPLAY  4
-#define VARIANT_4_NO_DISPLAY   5
-#define VARIANT_4_WITH_DISPLAY  6
+#define VARIANT_2_PORT 1
+#define VARIANT_3_PORT 2
+#define VARIANT_4_PORT 3
 
 // SELECT ACTIVE HARDWARE VARIANT HERE:
-#define ACTIVE_VARIANT VARIANT_4_NO_DISPLAY
+#define ACTIVE_VARIANT VARIANT_4_PORT
 
-// ── Automatic Variant Pin & Display Configuration ────────────────────────────
+// ── Automatic Variant Pin Configuration ──────────────────────────────────────
 #define RELAY_ACTIVE_LOW true
 
-#if (ACTIVE_VARIANT == VARIANT_2_NO_DISPLAY)
+#if (ACTIVE_VARIANT == VARIANT_2_PORT)
   #define NUM_PLUGS 2
-  #define HAS_DISPLAY false
   const uint8_t RELAY_PINS[NUM_PLUGS] = { 14, 13 }; // Relays 1, 2
-#elif (ACTIVE_VARIANT == VARIANT_2_WITH_DISPLAY)
-  #define NUM_PLUGS 2
-  #define HAS_DISPLAY true
-  const uint8_t RELAY_PINS[NUM_PLUGS] = { 14, 13 }; 
-#elif (ACTIVE_VARIANT == VARIANT_3_NO_DISPLAY)
+#elif (ACTIVE_VARIANT == VARIANT_3_PORT)
   #define NUM_PLUGS 3
-  #define HAS_DISPLAY false
   const uint8_t RELAY_PINS[NUM_PLUGS] = { 14, 13, 12 }; // Relays 1, 2, 3
-#elif (ACTIVE_VARIANT == VARIANT_3_WITH_DISPLAY)
-  #define NUM_PLUGS 3
-  #define HAS_DISPLAY true
-  const uint8_t RELAY_PINS[NUM_PLUGS] = { 14, 13, 12 };
-#elif (ACTIVE_VARIANT == VARIANT_4_NO_DISPLAY)
+#elif (ACTIVE_VARIANT == VARIANT_4_PORT)
   #define NUM_PLUGS 4
-  #define HAS_DISPLAY false
   const uint8_t RELAY_PINS[NUM_PLUGS] = { 14, 13, 12, 16 }; // Relays 1, 2, 3, 4
-#elif (ACTIVE_VARIANT == VARIANT_4_WITH_DISPLAY)
-  #define NUM_PLUGS 4
-  #define HAS_DISPLAY true
-  const uint8_t RELAY_PINS[NUM_PLUGS] = { 14, 13, 12, 16 };
 #endif
 
 
@@ -86,5 +68,21 @@
 #define FILE_SCHEDULES "/schedules.json"
 #define FILE_WIFI_PREF "/wifi_pref.json"
 #define MAX_SCHEDULES_PER_PLUG 4
+
+// ── Optional Sensors ─────────────────────────────────────────────────────────
+// Set to true to enable compiling in sensor code
+#define ENABLE_DHT11 false
+#define ENABLE_GAS   false
+#define ENABLE_FLAME false
+
+#if ENABLE_DHT11
+  #define PIN_DHT11 5 // D1
+#endif
+#if ENABLE_GAS
+  #define PIN_GAS 4 // D2
+#endif
+#if ENABLE_FLAME
+  #define PIN_FLAME 2 // D4
+#endif
 
 #endif // CONFIG_H

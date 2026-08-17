@@ -66,6 +66,11 @@ void publishTimerState(uint8_t plugIndex, bool active,
 void publishScheduleState(uint8_t plugIndex);
 
 /**
+ * Publishes sensor readings to MQTT.
+ */
+void publishSensors(float temperature, float humidity, int gasState, int flameState);
+
+/**
  * Returns true if the MQTT client is currently connected to the broker.
  */
 bool isMqttConnected();
